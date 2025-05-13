@@ -3,9 +3,10 @@ import os
 import sdcard
 import discharge_control
 
-# SPI configuration for SD card
-spi = SPI(1, baudrate=5000000, polarity=0, phase=0, sck=Pin(14), mosi=Pin(13), miso=Pin(12))
-cs = Pin(38, Pin.OUT)
+# SPI configuration for SD card and ADS1256
+#spi = SPI(1, baudrate=500_000, polarity=0, phase=1, sck=Pin(14), mosi=Pin(13), miso=Pin(12))
+#spi = SPI(1, baudrate=500_000, polarity=0, phase=1, sck=Pin(35), mosi=Pin(36), miso=Pin(37))
+sd_cs = Pin(38, Pin.OUT)
 
 class Buffer:
     def __init__(self, buffersize, filename):
@@ -17,9 +18,9 @@ class Buffer:
 # Function to initialize SD card
 def initialize_sd_card():
     try:
-        sd = sdcard.SDCard(spi, cs)  # Initialize SD card
-        vfs = os.VfsFat(sd)
-        os.mount(vfs, "/sd")
+        #sd = sdcard.SDCard(spi, sd_cs)  # Initialize SD card
+       # vfs = os.VfsFat(sd)
+       # os.mount(vfs, "/sd")
         print("SD Card init OK")
         return "SD Card OK"
     except Exception as e:

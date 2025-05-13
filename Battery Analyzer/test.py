@@ -1,11 +1,8 @@
 import io_control
 import logging
-from ina219 import INA219
 
-# INA219 initialization
-SHUNT_OHMS = 0.1
-ina = INA219(SHUNT_OHMS, io_control.i2c)
-ina.configure(voltage_range=INA219.RANGE_16V, gain=INA219.GAIN_1_40MV)
+
+
 
 def initialize_dac():
     try:
@@ -41,14 +38,3 @@ def oversample(adc, samples):
 
 
 
-
-# Function to test INA219
-def test_ina219():
-    try:
-        #voltage = ina.voltage()
-        voltage, elapsed_time = oversample(io_control.adc, io_control.samples)
-
-        current = ina.shunt_voltage()*10
-        return f"INA219 OK: {voltage:.1f}mV {current:.1f}mA", elapsed_time
-    except Exception as e:
-        return f"INA219 Error: {str(e)}", 0

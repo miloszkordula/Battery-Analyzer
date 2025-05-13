@@ -49,8 +49,9 @@ def discharge(current, time_us, log_downsample):
     downsample_tracker = 0
 
     while extended_ticks_us.global_time_tracker.ticks_us() < end_time:
-        voltage = io_control.get_voltage()
-        measured_current = io_control.get_current()
+        #voltage = io_control.get_voltage()
+        #measured_current = io_control.get_current()
+        voltage, measured_current = io_control.ads1256.get_reading_ADS1256()
         current_time = extended_ticks_us.global_time_tracker.ticks_us()
 
         global_energy += int(measured_current*(current_time - previous_time)/3.6) #mA * us / 3.6 -> pAh
@@ -92,8 +93,9 @@ def eis(current, min_freq, max_freq):
             sin_current = current * 0.5 * (1 + math.sin(sine_const * current_inner_time))
             io_control.set_current(sin_current)
 
-            voltage = io_control.get_voltage()
-            measured_current = io_control.get_current()
+            #voltage = io_control.get_voltage()
+            #measured_current = io_control.get_current()
+            voltage, measured_current = io_control.ads1256.get_reading_ADS1256()
             current_time = extended_ticks_us.global_time_tracker.ticks_us()
             global_energy += int(measured_current*(current_time - previous_time)/3.6) #mA * us / 3.6 -> pAh
             previous_time = current_time

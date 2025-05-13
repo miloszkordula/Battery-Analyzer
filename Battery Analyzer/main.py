@@ -31,8 +31,7 @@ try:
     print(f"CPU Freq: {freq()/1_000_000}MHz")
     test.scan_i2c()
     sd_status = sd_control.initialize_sd_card()
-    #ina_status, voltage_m_time = test.test_ina219()
-    #dac_status = test.initialize_dac()
+
 
     _thread.start_new_thread(display.display_task_if_active, ())
     discharge_control.discharge_program(l_time, l_current, h_time, h_current, eis_current, min_freq, max_freq, repetitions, log_downsample)
