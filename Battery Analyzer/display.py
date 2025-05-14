@@ -20,12 +20,9 @@ def display_status(status_lines):
 
 
 def display_disharge_status():
-    voltage, measured_current = io_control.ads1256.get_reading_ADS1256()
     status_lines = [
-        #f"V: {io_control.get_voltage():.1f}mV",
-        #f"I: {io_control.get_current():.2f}mA",
-        f"V: {voltage:.1f}mV",
-        f"I: {measured_current:.2f}mA",
+        f"V: {discharge_control.global_last_voltage:.2f}mV",
+        f"I: {discharge_control.global_last_current:.3f}mA",
         f"t: {int(extended_ticks_us.global_time_tracker.ticks_us()/60_000_000)}m {(extended_ticks_us.global_time_tracker.ticks_us()/1_000_000)%60:.2f}s",
         f"f: {discharge_control.global_filename}",
         f"loop: {discharge_control.global_loop_iteration}",

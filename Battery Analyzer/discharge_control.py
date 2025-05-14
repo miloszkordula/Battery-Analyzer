@@ -12,7 +12,14 @@ global_buffer_size = 8000 # Ustawienie rozmiaru bufora
 global_buffer = [global_buffer_size]
 global_buffer.clear()
 global_is_in_progress = 0
+global_last_voltage = float(0)
+global_last_current = float(0)
 
+
+def read_ADS1265():
+    global global_last_voltage, global_last_current
+    global_last_voltage, global_last_current = io_control.ads1256.get_reading_ADS1256()
+    
 
 def descending_log_list(min_val, max_val, num_values):
     if min_val <= 0 or max_val <= 0:
@@ -41,7 +48,7 @@ def descending_log_list(min_val, max_val, num_values):
 
 def discharge(current, time_us, log_downsample):
     print(f"DC Constant discharge started {current}mA, {time_us/1_000_000:.3f}s")
-    global global_energy, global_filename, global_buffer_size, global_buffer
+    global global_energy, global_filename, global_buffer_size, global_buffer, global_last_voltage, global_last_current
     io_control.set_current(current)
     start_time = extended_ticks_us.global_time_tracker.ticks_us()
     end_time = start_time + time_us 
@@ -49,16 +56,14 @@ def discharge(current, time_us, log_downsample):
     downsample_tracker = 0
 
     while extended_ticks_us.global_time_tracker.ticks_us() < end_time:
-        #voltage = io_control.get_voltage()
-        #measured_current = io_control.get_current()
-        voltage, measured_current = io_control.ads1256.get_reading_ADS1256()
+        read_ADS1265()
         current_time = extended_ticks_us.global_time_tracker.ticks_us()
-
-        global_energy += int(measured_current*(current_time - previous_time)/3.6) #mA * us / 3.6 -> pAh
+    
+        global_energy += int(global_last_current*(current_time - previous_time)/3.6) #mA * us / 3.6 -> pAh
         previous_time = current_time
         #elapsed_time = time.ticks_diff(time.ticks_us(), start_time)
         if downsample_tracker >= log_downsample:
-            global_buffer.append(f"{current_time/1_000:.3f}, {current:.2f}, {measured_current:.2f}, {voltage:.1f}, 0 , {global_energy/1_000_000:.6f} \n")
+            global_buffer.append(f"{current_time/1_000:.3f}, {current:.2f}, {global_last_current:.2f}, {global_last_voltage:.1f}, 0 , {global_energy/1_000_000:.6f} \n")
             downsample_tracker = 0
         downsample_tracker = downsample_tracker + 1
         
@@ -72,7 +77,7 @@ def discharge(current, time_us, log_downsample):
 def eis(current, min_freq, max_freq):
     freq_list, est_time = descending_log_list(min_freq, max_freq, 100)
     print(f"DC EIS started {current}mA, {est_time}s")
-    global global_energy, global_filename, global_buffer_size, global_buffer
+    global global_energy, global_filename, global_buffer_size, global_buffer, global_last_voltage, global_last_current
     
 
     T = 1.2 
@@ -92,14 +97,12 @@ def eis(current, min_freq, max_freq):
             current_inner_time = extended_ticks_us.global_time_tracker.ticks_us() - inner_start_time
             sin_current = current * 0.5 * (1 + math.sin(sine_const * current_inner_time))
             io_control.set_current(sin_current)
+            read_ADS1265()
 
-            #voltage = io_control.get_voltage()
-            #measured_current = io_control.get_current()
-            voltage, measured_current = io_control.ads1256.get_reading_ADS1256()
             current_time = extended_ticks_us.global_time_tracker.ticks_us()
-            global_energy += int(measured_current*(current_time - previous_time)/3.6) #mA * us / 3.6 -> pAh
+            global_energy += int(global_last_current*(current_time - previous_time)/3.6) #mA * us / 3.6 -> pAh
             previous_time = current_time
-            global_buffer.append(f"{current_time/1_000:.3f}, {sin_current:.2f}, {measured_current:.2f}, {voltage:.1f}, {x_freq}, {global_energy/1_000_000:.6f} \n")
+            global_buffer.append(f"{current_time/1_000:.3f}, {sin_current:.2f}, {global_last_current:.2f}, {global_last_voltage:.1f}, {x_freq}, {global_energy/1_000_000:.6f} \n")
             
             if len(global_buffer) >= global_buffer_size:
                 print("DC buffer save occured during critical section!")
