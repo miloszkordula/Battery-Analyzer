@@ -43,13 +43,15 @@ class ADS1256:
         values = self.spi.read(count)
         return values
 
-    def wait_for_drdy(self, timeout_ms=1000):
-        start = time.ticks_ms()
+    def wait_for_drdy(self, timeout_us=1_000_000):
+        start = time.ticks_us()
         while self.drdy.value() == 1:
-            if time.ticks_diff(time.ticks_ms(), start) > timeout_ms:
-                print("Timeout waiting for DRDY")
+            if time.ticks_diff(time.ticks_us(), start) > timeout_us:
+                print("ADS Timeout waiting for DRDY")
                 return False
-            time.sleep_us(10)
+            time.sleep_us(2)
+        if time.ticks_diff(time.ticks_us(), start) > 100:
+            print(f"ADS Waited {time.ticks_diff(time.ticks_us(), start)} us for drdy")
         return True
 
     def read_data(self, coef):
@@ -72,7 +74,7 @@ class ADS1256:
         self.write_register(0x01, mux)  # MUX
         self.send_command(self.CMD_SYNC)
         self.send_command(self.CMD_WAKEUP)
-        time.sleep_ms(5)
+        #time.sleep_us(210)
 
     def configure_adc(self):
         print("Resetting ADS1256...")
@@ -83,7 +85,7 @@ class ADS1256:
         # Write key config registers
         self.write_register(0x00, 0x02)  # STATUS: Auto-Calibration ON
         self.write_register(0x02, 0x00)  # ADCON: Gain=1, Clock off
-        self.write_register(0x03, 0x82)  # DRATE: 30,000 SPS
+        self.write_register(0xF0, 0x82)  # DRATE: 30,000 SPS
 
         # Read and dump all 11 registers
         print("Reading ADS1256 registers after reset:")
@@ -91,6 +93,7 @@ class ADS1256:
         for i, val in enumerate(regs):
             print(f"Reg 0x{i:02X} = 0x{val:02X}")
         self.set_channel(0)
+        time.sleep_us(210)
 
     
 
@@ -98,6 +101,7 @@ class ADS1256:
         current = self.read_data(self.current_coef)
 
         self.set_channel(1)
+        time.sleep_us(210)
         voltage = self.read_data(self.voltage_coef)
 
         self.set_channel(0)

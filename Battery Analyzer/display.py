@@ -31,14 +31,14 @@ def display_disharge_status():
     display_status(status_lines)
 
 def display_task_if_active():
-    print("DP Display task started")
+    print("DP Display task init")
     time.sleep(10)
     while discharge_control.global_is_in_progress == 0:
         print("DP Task not started yet")
         time.sleep(1)
     while discharge_control.global_is_in_progress == 1:
         display_disharge_status()
-        time.sleep(0.2)
+        time.sleep(0.1)
     print("DP Display task ended")
 
 

@@ -63,7 +63,7 @@ def discharge(current, time_us, log_downsample):
         previous_time = current_time
         #elapsed_time = time.ticks_diff(time.ticks_us(), start_time)
         if downsample_tracker >= log_downsample:
-            global_buffer.append(f"{current_time/1_000:.3f}, {current:.2f}, {global_last_current:.2f}, {global_last_voltage:.1f}, 0 , {global_energy/1_000_000:.6f} \n")
+            global_buffer.append(f"{current_time/1_000:.3f}, {current:.2f}, {global_last_current:.3f}, {global_last_voltage:.2f}, 0, {global_energy/1_000_000:.3f} \n")
             downsample_tracker = 0
         downsample_tracker = downsample_tracker + 1
         
@@ -102,7 +102,7 @@ def eis(current, min_freq, max_freq):
             current_time = extended_ticks_us.global_time_tracker.ticks_us()
             global_energy += int(global_last_current*(current_time - previous_time)/3.6) #mA * us / 3.6 -> pAh
             previous_time = current_time
-            global_buffer.append(f"{current_time/1_000:.3f}, {sin_current:.2f}, {global_last_current:.2f}, {global_last_voltage:.1f}, {x_freq}, {global_energy/1_000_000:.6f} \n")
+            global_buffer.append(f"{current_time/1_000:.3f}, {sin_current:.2f}, {global_last_current:.3f}, {global_last_voltage:.2f}, {x_freq:.3f}, {global_energy/1_000_000:.3f} \n")
             
             if len(global_buffer) >= global_buffer_size:
                 print("DC buffer save occured during critical section!")
