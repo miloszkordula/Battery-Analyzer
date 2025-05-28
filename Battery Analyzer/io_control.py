@@ -39,7 +39,7 @@ CS = Pin(10, Pin.OUT, value = 0)
 SYNC = Pin(9, Pin.OUT, value = 1)
 
 # SPI setup (slow speed for stability)
-spi = SPI(1, baudrate=2_000_000, polarity=0, phase=1, sck=Pin(14), mosi=Pin(13), miso=Pin(12))
+spi = SPI(1, baudrate=1_000_000, polarity=0, phase=1, sck=Pin(14), mosi=Pin(13), miso=Pin(12))
 
 
 ads1256 = ADS1256(spi, CS, DRDY, SYNC,

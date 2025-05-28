@@ -152,13 +152,58 @@ def extract_impedance_points(time, current, voltage, freq):
         indices = np.where(mask)[0]
 
         # Exclude first and last row
-        if len(indices) <= 2:
+        if len(indices) <= 101:
             continue
-        idx_range = indices[1:-1]
+        idx_range = indices[100:-1]
 
         t_seg = time[idx_range]
         i_seg = current[idx_range] - np.mean(current[idx_range])
-        v_seg = voltage[idx_range] - np.mean(voltage[idx_range])
+        v_seg = - voltage[idx_range] + 2.83
+
+        fig = go.Figure()
+        # Add the measured data
+
+        # First trace - voltage (left y-axis)
+        fig.add_trace(go.Scatter(
+            x=t_seg,
+            y=v_seg,
+            mode='markers',
+            name='Voltage',
+            yaxis='y1'
+        ))
+
+        # Second trace - current (right y-axis)
+        fig.add_trace(go.Scatter(
+            x=t_seg,
+            y=i_seg,
+            mode='markers',
+            name='Current',
+            marker=dict(color='orange'),
+            yaxis='y2'
+        ))
+            # Update layout to add a second y-axis
+        fig.update_layout(
+            title='Nyquist Plot',
+            xaxis=dict(title='Time'),
+            yaxis=dict(
+                title='Voltage',
+                #titlefont=dict(color='blue'),
+                tickfont=dict(color='blue')
+            ),
+            yaxis2=dict(
+                title='Current',
+                #titlefont=dict(color='orange'),
+                tickfont=dict(color='orange'),
+                overlaying='y',
+                side='right'
+            ),
+            template='plotly_dark',
+            showlegend=True,
+            dragmode='zoom'
+        )
+        # Show the plot
+        #fig.show()
+
 
         # Window to reduce leakage
         window = np.hanning(len(t_seg))
@@ -185,7 +230,7 @@ def extract_impedance_points(time, current, voltage, freq):
 
 
 def main():
-    filename = "data18.txt"
+    filename = "data20.txt"
 
     time, current, voltage, freq = load_data_single_freq(filename)
     Z, f = extract_impedance_points(time, current, voltage, freq)
