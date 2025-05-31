@@ -8,19 +8,19 @@ import sd_control
 
 
 ### Setings ###
-l_time = 30_000_000
+l_time = 10_000_000
 l_current = 0
 
-h_time = 30_000_000
+h_time = 10_000_000
 h_current = 100
 
 repetitions = 60
 
 log_downsample = 10 #Co który "nudny" log ma być  zapisany
 
-eis_current = 10 #mA
+eis_current = 20 #mA
 min_freq = 0.2 #Hz
-max_freq = 200 #Hz
+max_freq = 50 #Hz
 ###############
 
 
@@ -33,7 +33,7 @@ try:
     sd_status = sd_control.initialize_sd_card()
 
 
-    _thread.start_new_thread(display.display_task_if_active, ())
+    #_thread.start_new_thread(display.display_task_if_active, ())
     discharge_control.discharge_program(l_time, l_current, h_time, h_current, eis_current, min_freq, max_freq, repetitions, log_downsample)
 
     # Display on OLED

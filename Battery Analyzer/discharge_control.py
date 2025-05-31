@@ -2,6 +2,7 @@ import io_control
 import sd_control
 import math
 import extended_ticks_us
+import display
 
 
 ### Global variables ###
@@ -93,11 +94,21 @@ def eis(current, min_freq, max_freq):
         inner_end_time = inner_start_time + min((5_000_000 / x_freq), 16_000_000)
         sine_const = 2 * math.pi * x_freq / 1_000_000
 
+        previous_voltage = 0
+        resample_counter = 0
+
         while extended_ticks_us.global_time_tracker.ticks_us() < inner_end_time:
             current_inner_time = extended_ticks_us.global_time_tracker.ticks_us() - inner_start_time
             sin_current = current * 0.5 * (1 + math.sin(sine_const * current_inner_time))
             io_control.set_current(sin_current)
             read_ADS1265()
+
+            while previous_voltage != 0 and abs(previous_voltage - global_last_voltage) > 4 and resample_counter < 20:
+                print(f"ADS V diff {previous_voltage - global_last_voltage:.2f}mV!")
+                read_ADS1265()   
+                resample_counter = resample_counter + 1
+            resample_counter = 0   
+            previous_voltage = global_last_voltage
 
             current_time = extended_ticks_us.global_time_tracker.ticks_us()
             global_energy += int(global_last_current*(current_time - previous_time)/3.6) #mA * us / 3.6 -> pAh
@@ -112,7 +123,39 @@ def eis(current, min_freq, max_freq):
         if global_buffer:
             sd_control.log_to_sd(global_filename)
 
-
+def eis_continous(current, min_freq, max_freq):
+    #freq_list, est_time = descending_log_list(min_freq, max_freq, 100)
+    #print(f"DC EIS started {current}mA, {est_time}s")
+    global global_energy, global_filename, global_buffer_size, global_buffer, global_last_voltage, global_last_current
+    print("Started continous EIS")
+    #max_frequency = 100.0 #Hz
+    #min_frequency = 1   #Hz
+    time_us = 40_000_000
+    T = 1.2 
+    c = max_freq/T
+    io_control.set_current(0)
+    start_time = extended_ticks_us.global_time_tracker.ticks_us()
+    end_time = start_time + time_us 
+    previous_time =extended_ticks_us.global_time_tracker.ticks_us()
+    while extended_ticks_us.global_time_tracker.ticks_us() < end_time:
+        relative_time = float((extended_ticks_us.global_time_tracker.ticks_us() - start_time)/1_000_000)
+        sin_current = current * 0.5 * (1 + math.sin(2*math.pi*(c/(math.pow(relative_time,2)+0.1*max_freq))))
+        io_control.set_current(sin_current)
+        read_ADS1265()
+        current_time = extended_ticks_us.global_time_tracker.ticks_us()
+        global_energy += int(global_last_current*(current_time - previous_time)/3.6) #mA * us / 3.6 -> pAh
+        previous_time = current_time
+        #elapsed_time = time.ticks_diff(time.ticks_us(), start_time)
+        global_buffer.append(f"{current_time/1_000:.3f}, {sin_current:.2f}, {global_last_current:.3f}, {global_last_voltage:.2f}, 1, {global_energy/1_000_000:.3f} \n")
+        
+        if len(global_buffer) >= global_buffer_size:
+            print("DC buffer save occured during critical section!")
+            sd_control.log_to_sd(global_filename)
+    
+    io_control.set_current(0)
+    if global_buffer:
+        sd_control.log_to_sd(global_filename)
+    
 
 def discharge_program(l_time, l_current, h_time, h_current, eis_current, min_freq, max_freq, repetitions, log_downsample):
     print("DC Discharge started")
@@ -130,10 +173,14 @@ def discharge_program(l_time, l_current, h_time, h_current, eis_current, min_fre
     for i in range(repetitions):
 
         discharge(h_current, h_time, log_downsample)
+        display.display_disharge_status()
 
         discharge(l_current, l_time, log_downsample)
+        display.display_disharge_status()
 
         eis(eis_current, min_freq, max_freq)
+        #eis_continous(eis_current, min_freq, max_freq)
+        display.display_disharge_status()
 
         global_loop_iteration = global_loop_iteration + 1
 

@@ -1,8 +1,6 @@
 from machine import Pin, I2C, SPI, sleep, ADC, freq # type: ignore
 import mcp4725
 from ads1256lib import ADS1256
-import sd_control
-import time
 # ADC configuration
 samples = 16
 
