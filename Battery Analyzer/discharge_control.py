@@ -75,8 +75,8 @@ def discharge(current, time_us, log_downsample):
         sd_control.log_to_sd(global_filename)
 
 
-def eis(current, min_freq, max_freq):
-    freq_list, est_time = descending_log_list(min_freq, max_freq, 100)
+def eis(current, min_freq, max_freq, measurement_points):
+    freq_list, est_time = descending_log_list(min_freq, max_freq, measurement_points)
     print(f"DC EIS started {current}mA, {est_time}s")
     global global_energy, global_filename, global_buffer_size, global_buffer, global_last_voltage, global_last_current
     
@@ -91,7 +91,7 @@ def eis(current, min_freq, max_freq):
         io_control.set_current(0)
         print(f"DC Starting with f: {x_freq}")
         inner_start_time = extended_ticks_us.global_time_tracker.ticks_us()
-        inner_end_time = inner_start_time + min((5_000_000 / x_freq), 16_000_000)
+        inner_end_time = inner_start_time + max(2_000_000, min((3_000_000 / x_freq), 16_000_000))
         sine_const = 2 * math.pi * x_freq / 1_000_000
 
         previous_voltage = 0
@@ -103,7 +103,7 @@ def eis(current, min_freq, max_freq):
             io_control.set_current(sin_current)
             read_ADS1265()
 
-            while previous_voltage != 0 and abs(previous_voltage - global_last_voltage) > 4 and resample_counter < 20:
+            while previous_voltage != 0 and abs(previous_voltage - global_last_voltage) > 4 and resample_counter < 50:
                 print(f"ADS V diff {previous_voltage - global_last_voltage:.2f}mV!")
                 read_ADS1265()   
                 resample_counter = resample_counter + 1
@@ -157,7 +157,7 @@ def eis_continous(current, min_freq, max_freq):
         sd_control.log_to_sd(global_filename)
     
 
-def discharge_program(l_time, l_current, h_time, h_current, eis_current, min_freq, max_freq, repetitions, log_downsample):
+def discharge_program(l_time, l_current, h_time, h_current, eis_current, min_freq, max_freq, repetitions, log_downsample, measurement_points):
     print("DC Discharge started")
     global  global_is_in_progress, global_filename, global_buffer, global_loop_iteration
     global_is_in_progress = 1
@@ -178,7 +178,7 @@ def discharge_program(l_time, l_current, h_time, h_current, eis_current, min_fre
         discharge(l_current, l_time, log_downsample)
         display.display_disharge_status()
 
-        eis(eis_current, min_freq, max_freq)
+        eis(eis_current, min_freq, max_freq, measurement_points)
         #eis_continous(eis_current, min_freq, max_freq)
         display.display_disharge_status()
 
