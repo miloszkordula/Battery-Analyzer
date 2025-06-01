@@ -27,10 +27,10 @@ def time_to_frequency(time, signal):
 
 
 def main():
-    filename = "data/data26.txt"
+    filename = "data/data29.txt"
 
     time, current, voltage, freq = load_data_single_freq(filename)
-    Z, f = extract_impedance_points(time, current, voltage, freq)
+    Z, f, fitted_impedance = extract_impedance_points(time, current, voltage, freq)
 
     # Fit circuit model
     #R_s, R_p, C_p = equivalent_circuit_fit(f, Z)
@@ -41,7 +41,7 @@ def main():
     # Add the measured data
     fig.add_trace(go.Scatter(x=Z.real, y=-Z.imag, mode='markers', name='Measured Data'))
     # Add the fitted impedance
-    #fig.add_trace(go.Scatter(x=fitted_impedance.real, y=fitted_impedance.imag, mode='lines', name='Fitted Circuit'))
+    fig.add_trace(go.Scatter(x=fitted_impedance.real, y=-fitted_impedance.imag, mode='lines', name='Fitted Circuit'))
     # Customize the layout
     fig.update_layout(
         title='Nyquist Plot',
@@ -55,7 +55,7 @@ def main():
     fig.show()
 
 
-
+    """
 
     
     # Load and preprocess data
@@ -183,5 +183,5 @@ def main():
 
     make_nyquist_plot(filename)
 
-
+    """
 main()

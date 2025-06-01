@@ -2,6 +2,7 @@ import numpy as np
 import plotly.graph_objects as go
 from scipy.fft import fft, fftfreq
 from preprocess import preprocess_data, low_pass_filter
+from equivalent_circuit import equivalent_circuit_fit, auto_fit_eis
 
 
 
@@ -19,18 +20,22 @@ def extract_impedance_points(time, current, voltage, freq):
 
     unique_freqs = np.unique(freq)
     for f in unique_freqs:
+
+       # if f > 10:
+        #    continue
+
         # Mask rows for this frequency
         mask = freq == f
         indices = np.where(mask)[0]
 
         # Exclude first and last row
-        if len(indices) <= 3:
+        if len(indices) <= 30:
             continue
-        idx_range = indices[2:-1]
+        idx_range = indices[10:-1]
 
         t_seg = time[idx_range]
-        i_seg = current[idx_range]# - np.mean(current[idx_range])
-        v_seg = - voltage[idx_range] + voltage[0]
+        i_seg = current[idx_range] - np.mean(current[idx_range])
+        v_seg = - voltage[idx_range] + np.mean(voltage[idx_range])#+ voltage[0]
 
         t_seg, v_seg, i_seg, sample_rate = preprocess_data(t_seg, v_seg, i_seg)
 
@@ -61,7 +66,7 @@ def extract_impedance_points(time, current, voltage, freq):
         ))
             # Update layout to add a second y-axis
         fig.update_layout(
-            title='Nyquist Plot',
+            title='Nyquist Plot ' + str(f),
             xaxis=dict(title='Time'),
             yaxis=dict(
                 title='Voltage',
@@ -80,7 +85,7 @@ def extract_impedance_points(time, current, voltage, freq):
             dragmode='zoom'
         )
         # Show the plot
-       # fig.show()
+        #fig.show()
 
 
         # Window to reduce leakage
@@ -101,6 +106,12 @@ def extract_impedance_points(time, current, voltage, freq):
         Z_list.append(Z)
         freq_list.append(f)
 
+    impedance = np.array(Z_list)
 
+    freqs = np.array(freq_list)
 
-    return np.array(Z_list), np.array(freq_list)
+    R_s, R_p, C_p, _ = auto_fit_eis(freqs, impedance)
+    print(f"Fitted Circuit Parameters:\nR_s = {R_s:.2f} Ω, R_p = {R_p:.2f} Ω, C_p = {C_p:.2e} F")
+    fitted_impedance = R_s + 1 / (1/R_p + 1j * 2 * np.pi * freqs * C_p)
+
+    return np.array(Z_list), np.array(freq_list), fitted_impedance
