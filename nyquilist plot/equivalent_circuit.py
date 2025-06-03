@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.optimize import least_squares
+from scipy.optimize import curve_fit
 
 def equivalent_circuit_fit(frequency, impedance):
     """
@@ -30,10 +31,6 @@ def equivalent_circuit_fit(frequency, impedance):
     R_s, R_p, C_p = result.x
     return R_s, R_p, C_p
 
-
-import numpy as np
-from scipy.optimize import curve_fit
-import matplotlib.pyplot as plt
 
 def sort_by_frequency(freqs, Z):
     idx = np.argsort(freqs)[::-1]  # High to low freq
@@ -95,15 +92,17 @@ def standard_circuit_model(freqs, R_s, R_p, C_p):
     return R_s + Z_parallel
 
 def fit_standard_circuit(freqs, Z):
-    def real_part(freqs, R_s, R_p, C_p):
-        return standard_circuit_model(freqs, R_s, R_p, C_p).real
-    def imag_part(freqs, R_s, R_p, C_p):
-        return standard_circuit_model(freqs, R_s, R_p, C_p).imag
+    freqs_extended = np.logspace(-2, 6, 52)
+
+    def real_part(freqs_extended, R_s, R_p, C_p):
+        return standard_circuit_model(freqs_extended, R_s, R_p, C_p).real
+    def imag_part(freqs_extended, R_s, R_p, C_p):
+        return standard_circuit_model(freqs_extended, R_s, R_p, C_p).imag
 
     Z_real = Z.real
     Z_imag = Z.imag
     p0 = [0.2, 0.5, 1e-6]
-    bounds = ([0, 0, 1e-9], [10, 10, 1e-3])
+    bounds = ([0.1, 0.1, 1e-9], [1, 1, 1e-1])
     popt_real, _ = curve_fit(real_part, freqs, Z_real, p0=p0, bounds=bounds)
     popt_imag, _ = curve_fit(imag_part, freqs, Z_imag, p0=p0, bounds=bounds)
 
@@ -131,7 +130,9 @@ def fit_cpe_circuit(freqs, Z):
     popt_real, _ = curve_fit(real_part, freqs, Z_real, p0=p0, bounds=bounds)
     popt_imag, _ = curve_fit(imag_part, freqs, Z_imag, p0=p0, bounds=bounds)
 
-    return (popt_real + popt_imag) / 2
+    R_s, R_p, C_p, n = (popt_real + popt_imag) / 2
+
+    return R_s, R_p, C_p
 
 # ----- STEP 4: Automatic Logic -----
 def auto_fit_eis(freqs, Z):
