@@ -26,7 +26,7 @@ def input_plot(t_seg, v_seg, i_seg, f):
     ))
         # Update layout to add a second y-axis
     fig.update_layout(
-        title='Nyquist Plot ' + str(f),
+        title='Input plot for ' + str(f) + 'Hz',
         xaxis=dict(title='Time'),
         yaxis=dict(
             title='Voltage',

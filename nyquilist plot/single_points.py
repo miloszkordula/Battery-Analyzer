@@ -8,21 +8,31 @@ from plots import input_plot
 
 
 def load_data_single_freq(filename):
-    data = np.loadtxt(filename, delimiter=',')
+    data = np.loadtxt(filename, delimiter=',', skiprows = 2)
     time = data[:, 0] * 1e-3  # ms → s
     current = data[:, 2] * 1e-3  # mA → A
     voltage = data[:, 3] * 1e-3  # mV → V
     freq = data[:, 4]  # Hz
-    return time, current, voltage, freq
+    energy = data[:, 5] # uAh
+    iteration = data[:, 6]
+    return time, current, voltage, freq, energy, iteration
 
-def extract_impedance_points(time, current, voltage, freq):
+def extract_impedance_points(time, current, voltage, freq, energy, iteration, it):
     Z_list = []
     freq_list = []
+
+    iteration_mask = iteration == it
+    iteration_indices = np.where(iteration_mask)[0]
+    time = time[iteration_indices]
+    current = current[iteration_indices]
+    voltage = voltage[iteration_indices]
+    freq = freq[iteration_indices]
+    energy = energy[iteration_indices]
 
     unique_freqs = np.unique(freq)
     for f in unique_freqs:
 
-        if f < 1.5:
+        if f < 10 and f > 0:
 
             # Mask rows for this frequency
             mask = freq == f
@@ -73,4 +83,4 @@ def extract_impedance_points(time, current, voltage, freq):
 
     fitted_impedance = R_s + 1 / (1/R_p + 1j * 2 * np.pi * freqs * C_p)
 
-    return np.array(Z_list), np.array(freq_list), fitted_impedance
+    return np.array(Z_list), np.array(freq_list), fitted_impedance, energy[0]
