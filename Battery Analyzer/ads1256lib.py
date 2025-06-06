@@ -64,7 +64,7 @@ class ADS1256:
         if value & 0x800000:
             value -= 0x1000000
 
-        value = value * coef
+        value = int(value * coef * 10000) #[0.1u]
         return value
     
     
@@ -83,27 +83,26 @@ class ADS1256:
         self.send_command(self.CMD_WAKEUP)
 
         # Write key config registers
-        self.write_register(0x00, 0x02)  # STATUS: Auto-Calibration ON
+        self.write_register(0x00, 0x06)  # STATUS: Auto-Calibration ON, Buffer ON
         self.write_register(0x02, 0x00)  # ADCON: Gain=1, Clock off
-        self.write_register(0x03, 0xE0)  # DRATE: 30,000 SPS
+        self.write_register(0x03, 0xC0)  # DRATE: 30,000 SPS
 
         # Read and dump all 11 registers
         print("Reading ADS1256 registers after reset:")
         regs = self.read_registers()
         for i, val in enumerate(regs):
             print(f"Reg 0x{i:02X} = 0x{val:02X}")
-        self.set_channel(0)
+        self.set_channel(1)
         time.sleep_us(210)
 
     
 
     def get_reading_ADS1256(self):
-        current = self.read_data(self.current_coef)
-
-        self.set_channel(1)
-        time.sleep_us(210)
-        voltage = self.read_data(self.voltage_coef)
-
+        voltage = self.read_data(self.voltage_coef)        
         self.set_channel(0)
+        time.sleep_us(210)
+
+        current = self.read_data(self.current_coef)
+        self.set_channel(1)
 
         return voltage, current

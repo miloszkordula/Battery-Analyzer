@@ -11,6 +11,6 @@ class Settings:
         
         discharge(0, 60_000_000, 100)
 
-        eis(100, 0.5, 20, 40)
+        eis(100, 0.1, 20, 40)
         
         discharge(420, 900_000_000, 20)

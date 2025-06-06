@@ -21,11 +21,11 @@ def display_status(status_lines):
 
 def display_disharge_status():
     status_lines = [
-        f"V: {discharge_control.global_last_voltage:.2f}mV",
-        f"I: {discharge_control.global_last_current:.3f}mA",
+        f"V: {discharge_control.global_last_voltage/10_000:.3f}mV",
+        f"I: {discharge_control.global_last_current/10_000:.3f}mA",
         f"t: {int(extended_ticks_us.global_time_tracker.ticks_us()/60_000_000)}m {(extended_ticks_us.global_time_tracker.ticks_us()/1_000_000)%60:.2f}s",
         f"f: {discharge_control.global_filename}",
-        f"loop: {discharge_control.global_loop_iteration}",
+        f"l: {discharge_control.global_loop_iteration} f: {discharge_control.global_freq:.3f}",
         f"E: {float(discharge_control.global_energy)/1_000_000_000:.3f}mAh"
     ]
     display_status(status_lines)
