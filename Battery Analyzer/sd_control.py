@@ -3,6 +3,7 @@ import os
 import sdcard
 import discharge_control
 import errno
+import gc
 
 # SPI configuration for SD card and ADS1256
 #spi = SPI(1, baudrate=500_000, polarity=0, phase=1, sck=Pin(14), mosi=Pin(13), miso=Pin(12))
@@ -17,8 +18,16 @@ class Buffer:
         self.filename: str = filename
 
 
-# Function to initialize SD card
+def memory_monitor():  
+    free_mem = gc.mem_free()
+    used_mem = gc.mem_alloc()
+    total_mem = free_mem + used_mem
 
+    print("MEM Free: ", free_mem, " Used: ", used_mem, " Heap: ", total_mem)
+
+
+
+# Function to initialize SD card
 def initialize_sd_card():
     try:
         sd = sdcard.SDCard(spi, sd_cs)
@@ -58,6 +67,7 @@ def log_to_sd(filename):
             for line in discharge_control.global_buffer:
                 f.write(line)
             f.close()
+        memory_monitor()
         discharge_control.global_buffer.clear()
     except Exception as e:
         print(f"SD Error saving file to card: {e}")

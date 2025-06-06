@@ -4,14 +4,14 @@ from ads1256lib import ADS1256
 # ADC configuration
 samples = 16
 
-resistance = 15.6 #[Ohm]
-DAC_coefficient = (4096*resistance*0.84)/3300
+resistance = 7.8 #[Ohm]
+DAC_coefficient = (4095*resistance)/3300
 
 CH_current_feedback = 0x08 #CH0
 CH_input_voltage = 0x18 #CH1
 
-ADC_input_voltage_coefficient = 2.5  * 3410 / 0x7FFFFF
-ADC_current_feedback_coefficient = 2.5  * 3410 / (0x7FFFFF*resistance)
+ADC_input_voltage_coefficient = 2.5  * 4076 / 0x7FFFFF
+ADC_current_feedback_coefficient = 2.5  * 3968 / (0x7FFFFF*resistance)
 
 
 

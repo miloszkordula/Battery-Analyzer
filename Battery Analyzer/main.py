@@ -7,22 +7,6 @@ import discharge_control
 import sd_control
 
 
-### Setings ###
-l_time = 10_000_000
-l_current = 0
-
-h_time = 10_000_000
-h_current = 100
-
-repetitions = 60
-
-log_downsample = 10 #Co który "nudny" log ma być  zapisany
-
-eis_current = 50 #mA
-min_freq = 0.02 #Hz
-max_freq = 20 #Hz
-measuremnt_points = 100
-###############
 
 
 # Main code
@@ -35,7 +19,7 @@ try:
 
 
     #_thread.start_new_thread(display.display_task_if_active, ())
-    discharge_control.discharge_program(l_time, l_current, h_time, h_current, eis_current, min_freq, max_freq, repetitions, log_downsample, measuremnt_points)
+    discharge_control.discharge_program()#l_time, l_current, h_time, h_current, eis_current, min_freq, max_freq, repetitions, log_downsample, measuremnt_points)
 
     # Display on OLED
     while True:
