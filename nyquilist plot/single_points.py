@@ -29,6 +29,19 @@ def extract_impedance_points(time, current, voltage, freq, energy, iteration, it
     freq = freq[iteration_indices]
     energy = energy[iteration_indices]
 
+    
+    Vo_mask = freq == 0
+    Vo_indices = np.where(Vo_mask)[0]
+    Vo_current = current[Vo_indices]
+    Vo_voltage = voltage[Vo_indices]
+    Vo = 0
+    for i, Vo_I in enumerate(Vo_current):
+        V_list = []
+        if Vo_I < 0.005:
+            V_list.append(Vo_voltage[i])
+        if len(V_list):
+            Vo = sum(V_list)/len(V_list)
+
     unique_freqs = np.unique(freq)
     for f in unique_freqs:
 
@@ -78,7 +91,7 @@ def extract_impedance_points(time, current, voltage, freq, energy, iteration, it
 
    # R_s, R_p, C_p, _ = auto_fit_eis(freqs, impedance)
     R_s, R_p, C_p = equivalent_circuit_fit(freqs, impedance)
-    print(f"Fitted Circuit Parameters:\nR_s = {R_s:.2f} Ω, R_p = {R_p:.2f} Ω, C_p = {C_p:.2e} F")
+    print(f"Fitted Circuit Parameters No.{int(it)}:\nVo = {Vo:.3f} V R_s = {R_s:.2f} Ω, R_p = {R_p:.2f} Ω, C_p = {C_p:.2e} F")
 
 
     fitted_impedance = R_s + 1 / (1/R_p + 1j * 2 * np.pi * freqs * C_p)

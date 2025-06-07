@@ -4,7 +4,7 @@ from single_points import load_data_single_freq, extract_impedance_points
 
 
 def main():
-    filename = "data/000003.txt"
+    filename = "data/000022.txt"
 
     time, current, voltage, freq, energy, iterations = load_data_single_freq(filename)
 
@@ -24,7 +24,7 @@ def main():
         # Customize the layout
         
         fig.update_layout(
-            title='Nyquist Plot No. ' + str(int(iteration)) + ' Discharged before: ' + str(int(first_energy)/1000)+ 'mAh',
+            title='Nyquist Plot No. ' + str(int(iteration)) + ' Discharged before: ' + str(int(first_energy*1000)/1000)+ 'mAh',
             xaxis_title='Re(Z) [Ohms]',
             yaxis_title='-Im(Z) [Ohms]',
             template='plotly_dark',  # You can change the theme here
