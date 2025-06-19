@@ -20,7 +20,7 @@ try:
     while True:
         #ina_status, voltage_m_time = test_ina219()
         io_control.set_current(0)
-        display.display_status(["Discharge","Finnished",f"E: {float(discharge_control.global_energy)/1_000_000_000:.3f}mAh"])
+        display.display_status(["Discharge","Finnished",f"E: {float(discharge_control.state.energy)/1_000_000_000:.3f}mAh"])
         
 
 except Exception as e:

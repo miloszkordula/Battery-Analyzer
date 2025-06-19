@@ -10,17 +10,20 @@ import sys
 spi = SPI(2, baudrate=5_000_000, polarity=0, phase=0, sck=Pin(47), mosi=Pin(18), miso=Pin(21))
 sd_cs = Pin(38, Pin.OUT, value = 0)
 
-global_buffer_size = 8000 # Ustawienie rozmiaru bufora
-global_buffer_record_size = 34 # 2×int64 + 4×int32 + uint16
-global_buffer = bytearray(global_buffer_size * global_buffer_record_size)
-global_current_index = int(0)
+class BufferState:
+    def __init__(self):
+        self.buffer_size = 8000 # Ustawienie rozmiaru bufora
+        self.buffer_record_size = 34 # 2×int64 + 4×int32 + uint16
+        self.buffer = bytearray(self.buffer_size * self.buffer_record_size)
+        self.current_index = int(0)
+
+buffer_state = BufferState()
 
 def store_record(time_us, current, last_current, last_voltage, freq, energy_pAh, loop_iteration):
-    global global_buffer, global_current_index
-    offset = global_current_index * 34
+    offset = buffer_state.current_index * 34
     # Scale floats to fixed-point integers
     # Example: 1000 * volts, 1000 * amps
-    pack_into('<qiiiiqH', global_buffer, offset,    # q = int64, i = int32
+    pack_into('<qiiiiqH', buffer_state.buffer, offset,    # q = int64, i = int32
               int(time_us),                         # us     int64 max 290 000 years           
               int(current * 1000),                  # uA     int32 max 2147 A
               int(last_current),                    # 0.1uA  int32 max 214 A
@@ -28,7 +31,7 @@ def store_record(time_us, current, last_current, last_voltage, freq, energy_pAh,
               int(freq * 1_000_000),                # uHz    int32 max 2147 Hz
               int(energy_pAh),                      # pAh    int64 max 9 MAh
               int(loop_iteration))                  # No.   uint16 max 65000
-    global_current_index = global_current_index + 1
+    buffer_state.current_index = buffer_state.current_index + 1
 
 
 def memory_monitor():  
@@ -75,13 +78,12 @@ def initialize_sd_card():
             print("SD card error:", e)
 
 def log_to_sd(filename):
-    global global_buffer, global_current_index
     try:
         with open("/sd/" + filename, "a") as f:
-            for i in range(global_current_index):
+            for i in range(buffer_state.current_index):
                 offset = i * 34
                 time_us, current, last_current, last_voltage, freq, energy, loop = \
-                    unpack_from('<qiiiiqH', global_buffer, offset)
+                    unpack_from('<qiiiiqH', buffer_state.buffer, offset)
 
                 # Format line with fixed-point scaling restored
                 line = "{:.3f}, {:.3f}, {:.4f}, {:.4f}, {:.6f}, {:.6f}, {}\n".format(
@@ -95,10 +97,10 @@ def log_to_sd(filename):
                 )
                 f.write(line)
         memory_monitor()
-        global_current_index = 0
+        buffer_state.current_index = 0
     except Exception as e:
         print(f"SD Error saving file to card: {e}")
-        global_current_index = 0
+        buffer_state.current_index = 0
 
 def get_new_filename():
     try:

@@ -26,4 +26,4 @@ class ExtendedTicksUS:
         self._time_offset += offset
 
 
-global_time_tracker = ExtendedTicksUS()
+time_tracker = ExtendedTicksUS()
