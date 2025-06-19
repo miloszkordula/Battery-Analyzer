@@ -1,8 +1,8 @@
 import io_control
 import time
-from sh1106 import SH1106_I2C
+from ext_lib.sh1106 import SH1106_I2C
 import discharge_control
-import extended_ticks_us
+import lib.extended_ticks_us as extended_ticks_us
 
 # OLED initialization
 WIDTH = 128

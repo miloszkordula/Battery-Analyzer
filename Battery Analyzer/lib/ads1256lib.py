@@ -85,7 +85,7 @@ class ADS1256:
         # Write key config registers
         self.write_register(0x00, 0x06)  # STATUS: Auto-Calibration ON, Buffer ON
         self.write_register(0x02, 0x00)  # ADCON: Gain=1, Clock off
-        self.write_register(0x03, 0xC0)  # DRATE: 30,000 SPS
+        self.write_register(0x03, 0x82)  # DRATE: 30,000 SPS
 
         # Read and dump all 11 registers
         print("Reading ADS1256 registers after reset:")

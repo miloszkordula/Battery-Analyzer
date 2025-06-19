@@ -1,16 +1,14 @@
 from machine import Pin, I2C, SPI, sleep, ADC, freq  # type: ignore
 import os
-import sdcard
+import ext_lib.sdcard as sdcard
 import errno
 import gc
 from struct import pack_into, unpack_from
-import gc
+import sys
 
 # SPI configuration for SD card and ADS1256
-#spi = SPI(1, baudrate=500_000, polarity=0, phase=1, sck=Pin(14), mosi=Pin(13), miso=Pin(12))
 spi = SPI(2, baudrate=5_000_000, polarity=0, phase=0, sck=Pin(47), mosi=Pin(18), miso=Pin(21))
 sd_cs = Pin(38, Pin.OUT, value = 0)
-#sd_cs = Pin(39, Pin.OUT, value = 0)
 
 global_buffer_size = 8000 # Ustawienie rozmiaru bufora
 global_buffer_record_size = 34 # 2×int64 + 4×int32 + uint16
@@ -49,6 +47,7 @@ def initialize_sd_card():
         vfs = os.VfsFat(sd)
         os.mount(vfs, "/sd")
         print("SD card mounted at /sd")
+        sys.path.append('/sd')
 
         # ==== Print SD card info ====
         statvfs = os.statvfs("/sd")

@@ -1,19 +1,20 @@
 import io_control
 import sd_control
 import math
-import extended_ticks_us
+import lib.extended_ticks_us as extended_ticks_us
 import display
 import time
 
 
 ### Global variables ###
 global_energy = int(0)
-global_filename = ""
+global_filename = "No battery!"
 global_loop_iteration = int(0)
 global_is_in_progress = int(0)
 global_last_voltage = int(0)
 global_last_current = int(0)
 global_freq = float(0)
+global_max_low_voltage_count = 10
 
 
 def read_ADS1265():
@@ -57,14 +58,17 @@ def descending_log_list(min_val, max_val, num_values):
 
 
 
-def discharge(current, time_us, log_downsample):
+def discharge(settings_obj, current, time_us, log_downsample):
+    global global_energy, global_filename, sd_control, global_last_voltage, global_last_current, global_loop_iteration, global_is_in_progress
+    if global_is_in_progress == 0: return
+
     print(f"DC Constant discharge started {current}mA, {time_us/1_000_000:.3f}s")
-    global global_energy, global_filename, sd_control, global_last_voltage, global_last_current, global_loop_iteration
     io_control.set_current(current)
     start_time = extended_ticks_us.global_time_tracker.ticks_us()
     end_time = start_time + time_us 
     previous_time = extended_ticks_us.global_time_tracker.ticks_us()
     downsample_tracker = 0
+    low_voltage_counter = 0
 
     while extended_ticks_us.global_time_tracker.ticks_us() < end_time:
         read_ADS1265()
@@ -75,26 +79,37 @@ def discharge(current, time_us, log_downsample):
         #elapsed_time = time.ticks_diff(time.ticks_us(), start_time)
         if downsample_tracker >= log_downsample:
             sd_control.store_record(current_time, current, global_last_current, global_last_voltage, 0, global_energy, global_loop_iteration)
-            #global_buffer.append(f"{current_time/1_000:.2f}, {current:.2f}, {global_last_current:.3f}, {global_last_voltage:.2f}, 0, {global_energy/1_000_000:.2f}, {global_loop_iteration} \n")
             downsample_tracker = 0
         downsample_tracker = downsample_tracker + 1
+
+        if global_last_voltage < settings_obj.end_voltage:
+            low_voltage_counter += 1
+            if low_voltage_counter > global_max_low_voltage_count:
+                global_is_in_progress = 0
+                break
+        else: low_voltage_counter = 0
+
         
         if sd_control.global_current_index >= sd_control.global_buffer_size:
             print(f"SD saving {sd_control.global_current_index} records, avg {sd_control.global_current_index*1_000_000/time_us} SPS")
             sd_control.log_to_sd(global_filename)
             display.display_disharge_status()
     
+    io_control.set_current(0)
     if sd_control.global_current_index:
         print(f"SD saving {sd_control.global_current_index} records, avg {sd_control.global_current_index*1_000_000/time_us} SPS")
         sd_control.log_to_sd(global_filename)
     display.display_disharge_status()
 
 
-def eis(current, min_freq, max_freq, measurement_points):
+def eis(settings_obj, current, min_freq, max_freq, measurement_points):
+    global global_energy, global_filename, sd_control, global_last_voltage, global_last_current, global_loop_iteration, global_freq, global_is_in_progress
+    if global_is_in_progress == 0: return
+
     freq_list, time_list, log_downsample_list, est_time = descending_log_list(min_freq, max_freq, measurement_points)
     print(f"DC EIS started {current}mA, {est_time}s")
-    global global_energy, global_filename, sd_control, global_last_voltage, global_last_current, global_loop_iteration, global_freq
-    
+
+    low_voltage_counter = 0
 
     T = 1.2 
     c = max_freq/T
@@ -103,16 +118,14 @@ def eis(current, min_freq, max_freq, measurement_points):
 
 
     for i, x_freq  in enumerate(freq_list):
+        if global_is_in_progress == 0: return
+
         global_freq = x_freq
         io_control.set_current(0)
         print(f"DC Starting with f: {x_freq}, t:{time_list[i]/1_000_000}s log ds: {log_downsample_list[i]}")
         inner_start_time = extended_ticks_us.global_time_tracker.ticks_us()
         
         log_downsample = log_downsample_list[i]
-       # while x_freq * log_downsample < 0.125:
-      #     log_downsample = log_downsample + 1
-
-        #inner_end_time = inner_start_time + max(2_000_000, min((3_000_000 / x_freq), 16_000_000*log_downsample))
         inner_end_time = inner_start_time + time_list[i]
         sine_const = 2 * math.pi * x_freq / 1_000_000
 
@@ -126,7 +139,7 @@ def eis(current, min_freq, max_freq, measurement_points):
             io_control.set_current(sin_current)
             read_ADS1265()
 
-            while previous_voltage != 0 and abs(previous_voltage - global_last_voltage) > 4_000_0 and resample_counter < 50: #0.1uV
+            while previous_voltage != 0 and abs(previous_voltage - global_last_voltage) > settings_obj.filter_voltage and resample_counter < 50: #0.1uV
                 if resample_counter == 0 or resample_counter == 49:
                     print(f"ADS V diff {(previous_voltage - global_last_voltage)/10_000:.3f}mV!")
                 time.sleep_us(500)
@@ -146,11 +159,20 @@ def eis(current, min_freq, max_freq, measurement_points):
                 sd_control.store_record(current_time, sin_current, global_last_current, global_last_voltage, x_freq, global_energy, global_loop_iteration)
                 downsample_tracker = 1
                 
+
+            if global_last_voltage < settings_obj.end_voltage:
+                low_voltage_counter += 1
+                if low_voltage_counter > global_max_low_voltage_count:
+                    global_is_in_progress = 0
+                    break
+            else: low_voltage_counter = 0
+
             if sd_control.global_current_index >= sd_control.global_buffer_size:
                 sd_control.log_to_sd(global_filename)
                 print("DC buffer save occured during critical section!")
                 display.display_disharge_status()
     
+        io_control.set_current(0)
         if sd_control.global_current_index:
             print(f"SD saving {sd_control.global_current_index} records, avg {sd_control.global_current_index*1_000_000/time_list[i]} SPS")
             sd_control.log_to_sd(global_filename)
@@ -160,12 +182,26 @@ def eis(current, min_freq, max_freq, measurement_points):
 
 
     
-import settings
 
-def discharge_program():#l_time, l_current, h_time, h_current, eis_current, min_freq, max_freq, repetitions, log_downsample, measurement_points):
+
+def discharge_program():
+    import sdcard.settings as settings
+    #import settings 
+    loaded_settings = settings.Settings() 
+    global  global_is_in_progress, global_filename, global_loop_iteration, global_last_voltage
+
+    print("DC Ready to start, waiting for battery")
+
+    while global_last_voltage < loaded_settings.start_voltage:
+        time.sleep(1)
+        read_ADS1265()
+        display.display_disharge_status()
+
     print("DC Discharge started")
-    global  global_is_in_progress, global_filename, global_loop_iteration
+    
     global_is_in_progress = 1
+
+
 
     global_filename = sd_control.get_new_filename()
     #global_buffer.append("Time [ms], I set[mA], I meas[mA], U meas[V], f[Hz],  E [uAh], i\n")  # Nagłówek pliku
@@ -173,13 +209,15 @@ def discharge_program():#l_time, l_current, h_time, h_current, eis_current, min_
     extended_ticks_us.global_time_tracker.set_offset(extended_ticks_us.global_time_tracker.ticks_us())
 
 
-    discharge(0, 5_000_000, 10)
+    discharge(loaded_settings, 0, 5_000_000, 10)
 
-    loaded_settings = settings.Settings() 
+    
 
     for i in range(loaded_settings.repetitions):
 
         loaded_settings.Program()
+        
+
 
         global_loop_iteration = global_loop_iteration + 1
 
