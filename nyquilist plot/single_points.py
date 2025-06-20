@@ -1,23 +1,12 @@
 import numpy as np
-import plotly.graph_objects as go
 from scipy.fft import fft, fftfreq
 from preprocess import preprocess_data, low_pass_filter
-from equivalent_circuit import equivalent_circuit_fit, auto_fit_eis
+from equivalent_circuit import equivalent_circuit_fit
 from plots import input_plot
 
 
 
-def load_data_single_freq(filename):
-    data = np.loadtxt(filename, delimiter=',', skiprows = 2)
-    time = data[:, 0] * 1e-3  # ms → s
-    current = data[:, 2] * 1e-3  # mA → A
-    voltage = data[:, 3] * 1e-3  # mV → V
-    freq = data[:, 4]  # Hz
-    energy = data[:, 5] # uAh
-    iteration = data[:, 6]
-    return time, current, voltage, freq, energy, iteration
-
-def extract_impedance_points(time, current, voltage, freq, energy, iteration, it):
+def extract_impedance_points(time, current, voltage, freq, energy, iteration, it, showInputPlot):
     Z_list = []
     freq_list = []
 
@@ -45,27 +34,27 @@ def extract_impedance_points(time, current, voltage, freq, energy, iteration, it
     unique_freqs = np.unique(freq)
     for f in unique_freqs:
 
-        if f < 10 and f > 0:
+        if f > 0:
 
             # Mask rows for this frequency
             mask = freq == f
             indices = np.where(mask)[0]
 
-            # Exclude first and last row
+            # Exclude first and last rows
             if len(indices) <= 30:
                 continue
             idx_range = indices[10:-1]
 
             t_seg = time[idx_range]
             i_seg = current[idx_range] - np.mean(current[idx_range])
-            v_seg = - voltage[idx_range] + np.mean(voltage[idx_range])#+ voltage[0]
+            v_seg = - voltage[idx_range] + np.mean(voltage[idx_range])
 
             t_seg, v_seg, i_seg, sample_rate = preprocess_data(t_seg, v_seg, i_seg)
 
             v_seg = low_pass_filter(v_seg, cutoff_freq=10*f, sample_rate=sample_rate)
             i_seg = low_pass_filter(i_seg, cutoff_freq=10*f, sample_rate=sample_rate)
 
-            #input_plot(t_seg, v_seg, i_seg, f)
+            if showInputPlot: input_plot(t_seg, v_seg, i_seg, f)
           
             # Window to reduce leakage
             window = np.hanning(len(t_seg))
@@ -89,11 +78,10 @@ def extract_impedance_points(time, current, voltage, freq, energy, iteration, it
 
     freqs = np.array(freq_list)
 
-   # R_s, R_p, C_p, _ = auto_fit_eis(freqs, impedance)
     R_s, R_p, C_p = equivalent_circuit_fit(freqs, impedance)
-    print(f"Fitted Circuit Parameters No.{int(it)}:\nVo = {Vo:.3f} V R_s = {R_s:.2f} Ω, R_p = {R_p:.2f} Ω, C_p = {C_p:.2e} F")
+    print(f"Fitted Circuit Parameters No.{int(it)}:\nVo = {Vo:.3f} V R_s = {R_s:.3f} Ω, R_p = {R_p:.3f} Ω, C_p = {C_p:.3e} F")
 
 
     fitted_impedance = R_s + 1 / (1/R_p + 1j * 2 * np.pi * freqs * C_p)
 
-    return np.array(Z_list), np.array(freq_list), fitted_impedance, energy[0]
+    return np.array(Z_list), fitted_impedance, energy[0], Vo, R_s, R_p, C_p
