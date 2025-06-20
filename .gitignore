@@ -400,3 +400,6 @@ FodyWeavers.xsd
 
 env/
 nyquilist plot/data/
+*.png
+*.jpg
+*.docx

@@ -12,6 +12,7 @@ def main():
         print("File not found. Please try again.")
 
     showInputPlot = input("Show input plots? True/False: ").strip().lower() == "true"
+    showFourierPlot = input("Show Fourier plots? True/False: ").strip().lower() == "true"
     showNyqulistPlot = input("Show Nyqulist plots? True/False: ").strip().lower() == "true"
 
     time, current, voltage, freq, energy, iterations = load_data_single_freq(filename)
@@ -23,8 +24,11 @@ def main():
 
     for iteration in all_iterations:
 
+        if iteration > 18:
+            continue
+
         Z, fitted_impedance, first_energy, Vo, R_s, R_p, C_p = extract_impedance_points(
-            time, current, voltage, freq, energy, iterations, iteration, showInputPlot)
+            time, current, voltage, freq, energy, iterations, iteration, showInputPlot, showFourierPlot)
 
         Vo_list.append(Vo)
         R_s_list.append(R_s)

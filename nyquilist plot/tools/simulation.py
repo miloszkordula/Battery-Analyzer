@@ -4,14 +4,14 @@ import plotly.graph_objs as go
 # Parametry modelu
 Rs = 0.02        # Ohm
 Rct = 0.05       # Ohm
-Cdl = 0.2        # Farad
+Cct = 0.2        # Farad
 sigma = 0.1      # Ohm·s^(-0.5)
 
 frequencies = np.logspace(9, 0, num=100)  # Hz
 omega = 2 * np.pi * frequencies             # rad/s
 
 # Obliczenia impedancji
-Z_cdl = 1 / (1j * omega * Cdl)
+Z_cdl = 1 / (1j * omega * Cct)
 Z_warburg = sigma * (1 - 1j) / np.sqrt(omega)
 Z_parallel = 1 / (1/Rct + 1/Z_cdl)
 Z_total = Rs + Z_parallel + Z_warburg

@@ -2,11 +2,14 @@ import numpy as np
 from scipy.fft import fft, fftfreq
 from preprocess import preprocess_data, low_pass_filter
 from equivalent_circuit import equivalent_circuit_fit
-from plots import input_plot
+from plots import input_plot, fourier_plot
 
 
 
-def extract_impedance_points(time, current, voltage, freq, energy, iteration, it, showInputPlot):
+def extract_impedance_points(
+        time, current, voltage, freq, energy, 
+        iteration, it, showInputPlot, showFourierPlot):
+    
     Z_list = []
     freq_list = []
 
@@ -34,8 +37,7 @@ def extract_impedance_points(time, current, voltage, freq, energy, iteration, it
     unique_freqs = np.unique(freq)
     for f in unique_freqs:
 
-        if f > 0:
-
+        if f > 0 and f < 1.6:
             # Mask rows for this frequency
             mask = freq == f
             indices = np.where(mask)[0]
@@ -67,6 +69,9 @@ def extract_impedance_points(time, current, voltage, freq, energy, iteration, it
             dt = np.mean(np.diff(t_seg))
             freqs_fft = fftfreq(len(t_seg), dt)
 
+
+            if showFourierPlot: fourier_plot(freqs_fft, V_fft, I_fft, f)
+
             # Get index of closest FFT bin to target frequency
             target_idx = np.argmin(np.abs(freqs_fft - f))
             Z = V_fft[target_idx] / I_fft[target_idx]
@@ -75,7 +80,6 @@ def extract_impedance_points(time, current, voltage, freq, energy, iteration, it
             freq_list.append(f)
 
     impedance = np.array(Z_list)
-
     freqs = np.array(freq_list)
 
     R_s, R_p, C_p = equivalent_circuit_fit(freqs, impedance)
@@ -84,4 +88,4 @@ def extract_impedance_points(time, current, voltage, freq, energy, iteration, it
 
     fitted_impedance = R_s + 1 / (1/R_p + 1j * 2 * np.pi * freqs * C_p)
 
-    return np.array(Z_list), fitted_impedance, energy[0], Vo, R_s, R_p, C_p
+    return impedance, fitted_impedance, energy[0], Vo, R_s, R_p, C_p
